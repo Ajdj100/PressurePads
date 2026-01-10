@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace PressurePads.ExamplePatches
 {
-    internal class SimplePatch : ModulePatch // all patches must inherit ModulePatch
+    internal class OnTogglePatch : ModulePatch // all patches must inherit ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
@@ -30,13 +30,13 @@ namespace PressurePads.ExamplePatches
                 int remainingJumps = MaxJumps - CompletedJumps;
 
                 // we are using that LogSource variable we set up in the Plugin.cs file.
-                Plugin.LogSource.LogWarning($"You jumped! You have {remainingJumps} left!");
+                Plugin.LogSource.LogWarning($"YAAAAAAAAAAAAA! You have {remainingJumps} left!");
 
                 return true; // return true to run the original code and jump!
             }
             else
             {
-                Plugin.LogSource.LogError("You have no jumps left!");
+                Plugin.LogSource.LogError("YAAAAAAAAAAAAA no jumps left!");
 
                 return false; // we are out of jumps, so we return false, preventing the original jump code from running.
             }
