@@ -23,7 +23,7 @@ using static HairRenderer;
 namespace PressurePads
 {
     // first string below is your plugin's GUID, it MUST be unique to any other mod. Read more about it in BepInEx docs. Be sure to update it if you copy this project.
-    [BepInPlugin("PressurePads.UniqueGUID", "PressurePads", "1.0.0")]
+    [BepInPlugin("ajdj100.pressurepads", "PressurePads", "1.0.0")]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
