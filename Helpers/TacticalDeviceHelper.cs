@@ -36,6 +36,11 @@ namespace PressurePads.Helpers
         /// <returns>Type of given device</returns>
         public static DeviceType DetectType(TacticalComboVisualController device)
         {
+
+            // check for type override
+            if (Plugin.ClientConfig.DeviceTypeOverride.TryGetValue(device.LightMod.Item.TemplateId, out int type))
+                return (DeviceType)type;
+
             List<Transform> tacModes = _tacticalModesField.GetValue(device) as List<Transform>;
             bool foundFlashlight = false;
             bool foundOther = false;
@@ -84,17 +89,14 @@ namespace PressurePads.Helpers
         {
             var allDevices = GetTacticalDevices(controller);
             List<TacticalComboVisualController> outDevices = [];
-            Plugin.LogSource.LogInfo("Starting type detection");
             foreach (var device in allDevices)
             {
-                Plugin.LogSource.LogInfo($"Device= {device.name.Localized()}\n + Type={DetectType(device)}");
+                //Plugin.LogSource.LogInfo($"Device= {device.name.Localized()}\nType={DetectType(device)}\nID={device.LightMod.Item.TemplateId}");
                 if (DetectType(device) == type)
                 {
                     outDevices.Add(device);
-                    Plugin.LogSource.LogInfo("Adding to return");
                 }
             }
-            Plugin.LogSource.LogInfo($"Returning {outDevices.Count} items");
 
             return outDevices;
         }

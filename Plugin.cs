@@ -16,7 +16,6 @@ using EFT.InventoryLogic;
 using EFT.Visual;
 using HarmonyLib;
 using PressurePads.Classes;
-using PressurePads.ExamplePatches;
 using PressurePads.Helpers;
 using UnityEngine;
 using static HairRenderer;
@@ -34,6 +33,7 @@ namespace PressurePads
         public static ConfigEntry<KeyboardShortcut> _FlashlightModifier;
         public static ConfigEntry<KeyboardShortcut> _OtherKeybind;
         public static ConfigEntry<KeyboardShortcut> _OtherModifier;
+        public static ConfigEntry<bool> _simpleMode;
 
 
         // BaseUnityPlugin inherits MonoBehaviour, so you can use base unity functions like Awake() and Update()
@@ -41,7 +41,6 @@ namespace PressurePads
         {
             // save the Logger to public static field so we can use it elsewhere in the project
             LogSource = Logger;
-            LogSource.LogInfo("plugin loaded!");
 
             var pluginPath = Path.GetDirectoryName(Info.Location);
             ClientConfig = ConfigLoader.Load(pluginPath);
@@ -51,6 +50,14 @@ namespace PressurePads
             otherPad.OnActiveStateChanged += handlePadStateChange;
             otherPad.OnModeChanged += handlePadModeChange;
 
+            _simpleMode = Config.Bind(
+                "General",
+                "Simple Mode",
+                false,
+                new ConfigDescription(
+                    "Toggle-only controls. Pressing the hotkey always toggles the light on or off; holding the key has no effect."
+                )
+            );
             _FlashlightKeybind = Config.Bind(
                 "Flashlight",
                 "Flashlight Keybind",
@@ -80,6 +87,11 @@ namespace PressurePads
             otherPad.Key = _OtherKeybind.Value.MainKey;
 
             // hot reload support
+            _simpleMode.SettingChanged += (_, __) =>
+            {
+                flashlightPad.SimpleMode = _simpleMode.Value;
+                otherPad.SimpleMode = _simpleMode.Value;
+            };
             _FlashlightKeybind.SettingChanged += (_, __) =>
             {
                 flashlightPad.Key = _FlashlightKeybind.Value.MainKey;
@@ -133,13 +145,15 @@ namespace PressurePads
 
         private void handlePadStateChange(PressurePad pad, bool isActive, PressurePadInput direction)
         {
-            LogSource.LogWarning($"{pad.DeviceType} pad changed: {isActive}");
-
             if (cont == null && !TryInitController())
                 return;
 
             var tacticals = TacticalDeviceHelper.GetTacticalDevicesOfType(cont, pad.DeviceType);
             List<FirearmLightStateStruct> states = [];
+
+            //cancel if nothing to toggle
+            if (tacticals.Count <= 0)
+                return;
 
             foreach (var item in tacticals)
             {
@@ -152,16 +166,17 @@ namespace PressurePads
             if (direction == PressurePadInput.Pressed)
                 animate = true;
 
-            if (cont.SetLightsState(states.ToArray(), true, animate))
-                Logger.LogInfo("Set light state");
-            else
-                Logger.LogInfo("Failed to set light state");
+            cont.SetLightsState(states.ToArray(), true, animate);
         }
 
         private void handlePadModeChange(PressurePad pad)
         {
             var tacticals = TacticalDeviceHelper.GetTacticalDevicesOfType(cont, pad.DeviceType);
             List<FirearmLightStateStruct> states = [];
+
+            //cancel if nothing to toggle
+            if (tacticals.Count <= 0)
+                return;
 
             foreach (var item in tacticals)
             {
@@ -171,10 +186,7 @@ namespace PressurePads
                 states.Add(state);
             }
 
-            if (cont.SetLightsState(states.ToArray(), true))
-                Logger.LogInfo("Set light state");
-            else
-                Logger.LogInfo("Failed to set light state");
+            cont.SetLightsState(states.ToArray(), true);
         }
 
         private bool TryInitController()

@@ -28,6 +28,7 @@ namespace PressurePads.Classes
 
         public KeyCode Key;
         public KeyCode Modifier;
+        public bool SimpleMode = false;
         public TacticalDeviceHelper.DeviceType DeviceType { get; private set; }
 
         private bool IsHeld = false;
@@ -66,20 +67,25 @@ namespace PressurePads.Classes
                     return;
                 }
 
+                //simple mode override
+                if (SimpleMode)
+                {
+                    IsToggled = !IsToggled;
+                    EmitIfActiveChanged(PressurePadInput.Pressed);
+                    return;
+                }
+
                 if (IsToggled)
                 {
                     IsToggled = false;
                     EmitIfActiveChanged(PressurePadInput.Pressed);
-                    Plugin.LogSource.LogWarning($"[{DeviceType}] Toggle OFF");
                 }
 
                 float clickTime = Time.time;
-                Plugin.LogSource.LogWarning($"[{DeviceType}] Gap: {clickTime - lastClickTime}");
                 if (clickTime - lastClickTime < doubleClickThreshold)
                 {
                     IsToggled = true;
                     EmitIfActiveChanged(PressurePadInput.Pressed);
-                    Plugin.LogSource.LogWarning($"[{DeviceType}] Toggle ON");
                 }
 
                 IsHeld = true;

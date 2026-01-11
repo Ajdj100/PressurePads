@@ -6,6 +6,7 @@ using System.Text;
 using EFT;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Utilities;
+using static GClass2175;
 
 namespace PressurePads.Helpers
 {
@@ -18,19 +19,32 @@ namespace PressurePads.Helpers
     {
         public static ClientConfig Load(string pluginPath)
         {
-            var configPath = Path.Combine(pluginPath, "config.jsonc");
+            var configPath = Path.Combine(pluginPath, "config\\config.jsonc");
 
             if (!File.Exists(configPath))
             {
+                Plugin.LogSource.LogWarning("Config file not found!");
                 return new ClientConfig();
             }
 
             var json = File.ReadAllText(configPath);
 
-            // JSONC support (strip comments)
-            var parsed = JObject.Parse(json);
+            var settings = new JsonLoadSettings
+            {
+                CommentHandling = CommentHandling.Ignore,
+                LineInfoHandling = LineInfoHandling.Ignore
+            };
 
-            return parsed.ToObject<ClientConfig>() ?? new ClientConfig();
+
+            var parsed = JObject.Parse(json, settings);
+
+            var config = parsed.ToObject<ClientConfig>() ?? new ClientConfig();
+
+            Plugin.LogSource.LogInfo(
+                $"Loaded {config.DeviceTypeOverride.Count} device overrides"
+            );
+
+            return config;
         }
     }
 }
