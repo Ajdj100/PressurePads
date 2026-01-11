@@ -28,7 +28,7 @@ namespace PressurePads.Classes
 
         public KeyCode Key;
         public KeyCode Modifier;
-        public bool SimpleMode = false;
+        public bool AdvancedMode = false;
         public TacticalDeviceHelper.DeviceType DeviceType { get; private set; }
 
         private bool IsHeld = false;
@@ -37,17 +37,37 @@ namespace PressurePads.Classes
         private float lastClickTime = 0f;
         private float doubleClickThreshold = 0.3f;
 
-        public event Action<PressurePad, bool, PressurePadInput> OnActiveStateChanged;
+        /// <summary>
+        /// Fired whenever a pressure pad's active state changes.
+        /// </summary>
+        /// <remarks>
+        /// Parameters:
+        /// <list type="bullet">
+        ///   <item>
+        ///     <description><b>PressurePad</b> – The pressure pad instance that triggered the change.</description>
+        ///   </item>
+        ///   <item>
+        ///     <description><b>bool</b> – Whether the pad is now active.</description>
+        ///   </item>
+        ///   <item>
+        ///     <description><b>PressurePadInput</b> – Pressed/released flag.</description>
+        ///   </item>
+        ///   <item>
+        ///     <description><b>bool</b> – Skip click flag</description>
+        ///   </item>
+        /// </list>
+        /// </remarks>
+        public event Action<PressurePad, bool, PressurePadInput, bool> OnActiveStateChanged;
         public event Action<PressurePad> OnModeChanged;
 
-        private void EmitIfActiveChanged(PressurePadInput input)
+        private void EmitIfActiveChanged(PressurePadInput input, bool skipClick  = false)
         {
             bool active = IsActive;
             if (active == previousState)
                 return;
 
             previousState = active;
-            OnActiveStateChanged?.Invoke(this, active, input);
+            OnActiveStateChanged?.Invoke(this, active, input, skipClick);
         }
 
         public bool IsActive => IsHeld || IsToggled;
@@ -68,28 +88,30 @@ namespace PressurePads.Classes
                 }
 
                 //simple mode override
-                if (SimpleMode)
+                if (!AdvancedMode)
                 {
                     IsToggled = !IsToggled;
                     EmitIfActiveChanged(PressurePadInput.Pressed);
                     return;
                 }
 
+                //advanced mode behaviour
                 if (IsToggled)
                 {
                     IsToggled = false;
-                    EmitIfActiveChanged(PressurePadInput.Pressed);
                 }
 
+                //skip second animation on double click
+                bool skipClick = false;
                 float clickTime = Time.time;
                 if (clickTime - lastClickTime < doubleClickThreshold)
                 {
                     IsToggled = true;
-                    EmitIfActiveChanged(PressurePadInput.Pressed);
+                    skipClick = true;
                 }
 
                 IsHeld = true;
-                EmitIfActiveChanged(PressurePadInput.Pressed);
+                EmitIfActiveChanged(PressurePadInput.Pressed, skipClick);
                 lastClickTime = clickTime;
             }
 

@@ -33,7 +33,8 @@ namespace PressurePads
         public static ConfigEntry<KeyboardShortcut> _FlashlightModifier;
         public static ConfigEntry<KeyboardShortcut> _OtherKeybind;
         public static ConfigEntry<KeyboardShortcut> _OtherModifier;
-        public static ConfigEntry<bool> _simpleMode;
+        public static ConfigEntry<bool> _advancedMode;
+        public static ConfigEntry<bool> _dontClick;
 
 
         // BaseUnityPlugin inherits MonoBehaviour, so you can use base unity functions like Awake() and Update()
@@ -50,12 +51,20 @@ namespace PressurePads
             otherPad.OnActiveStateChanged += handlePadStateChange;
             otherPad.OnModeChanged += handlePadModeChange;
 
-            _simpleMode = Config.Bind(
+            _advancedMode = Config.Bind(
                 "General",
-                "Simple Mode",
+                "Advanced Mode",
                 false,
                 new ConfigDescription(
                     "Toggle-only controls. Pressing the hotkey always toggles the light on or off; holding the key has no effect."
+                )
+            );
+            _dontClick = Config.Bind(
+                "General",
+                "Skip toggle animation and sound",
+                false,
+                new ConfigDescription(
+                    "Toggle tactical devices without the click or toggle device animation."
                 )
             );
             _FlashlightKeybind = Config.Bind(
@@ -87,10 +96,10 @@ namespace PressurePads
             otherPad.Key = _OtherKeybind.Value.MainKey;
 
             // hot reload support
-            _simpleMode.SettingChanged += (_, __) =>
+            _advancedMode.SettingChanged += (_, __) =>
             {
-                flashlightPad.SimpleMode = _simpleMode.Value;
-                otherPad.SimpleMode = _simpleMode.Value;
+                flashlightPad.AdvancedMode = _advancedMode.Value;
+                otherPad.AdvancedMode = _advancedMode.Value;
             };
             _FlashlightKeybind.SettingChanged += (_, __) =>
             {
@@ -143,7 +152,7 @@ namespace PressurePads
             otherPad.Update();
         }
 
-        private void handlePadStateChange(PressurePad pad, bool isActive, PressurePadInput direction)
+        private void handlePadStateChange(PressurePad pad, bool isActive, PressurePadInput direction, bool skipAnimation)
         {
             if (cont == null && !TryInitController())
                 return;
@@ -163,7 +172,7 @@ namespace PressurePads
             }
 
             bool animate = false;
-            if (direction == PressurePadInput.Pressed)
+            if (!_dontClick.Value && !skipAnimation && direction == PressurePadInput.Pressed)
                 animate = true;
 
             cont.SetLightsState(states.ToArray(), true, animate);
@@ -186,7 +195,7 @@ namespace PressurePads
                 states.Add(state);
             }
 
-            cont.SetLightsState(states.ToArray(), true);
+            cont.SetLightsState(states.ToArray(), true, !_dontClick.Value);
         }
 
         private bool TryInitController()
