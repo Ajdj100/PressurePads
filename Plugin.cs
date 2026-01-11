@@ -28,6 +28,12 @@ namespace PressurePads
     {
         public static ManualLogSource LogSource;
 
+        public static ConfigEntry<KeyboardShortcut> _FlashlightKeybind;
+        public static ConfigEntry<KeyboardShortcut> _FlashlightModifier;
+        public static ConfigEntry<KeyboardShortcut> _OtherKeybind;
+        public static ConfigEntry<KeyboardShortcut> _OtherModifier;
+
+
         // BaseUnityPlugin inherits MonoBehaviour, so you can use base unity functions like Awake() and Update()
         private void Awake()
         {
@@ -40,106 +46,145 @@ namespace PressurePads
             //new SimplePatch().Enable();
 
             //new OnTogglePatch().Enable();
+
+            flashlightPad.OnActiveStateChanged += handlePadStateChange;
+            flashlightPad.OnModeChanged += handlePadModeChange;
+            otherPad.OnActiveStateChanged += handlePadStateChange;
+            otherPad.OnModeChanged += handlePadModeChange;
+
+            _FlashlightKeybind = Config.Bind(
+                "Flashlight",
+                "Flashlight Keybind",
+                new KeyboardShortcut(KeyCode.Z),
+                new ConfigDescription("Hotkey for controlling white light flashlights",
+                null));
+            _FlashlightModifier = Config.Bind(
+                "Flashlight",
+                "Flashlight Modifier",
+                new KeyboardShortcut(KeyCode.Z),
+                new ConfigDescription("Modifier key for switching flashlight modes",
+                null));
+            _OtherKeybind = Config.Bind(
+                "Other",
+                "Other Keybind",
+                new KeyboardShortcut(KeyCode.V),
+                new ConfigDescription("Hotkey for controlling IR and laser devices",
+                null));
+            _OtherModifier = Config.Bind(
+                "Other",
+                "Other Modifier",
+                new KeyboardShortcut(KeyCode.V),
+                new ConfigDescription("Modifier key for switching IR and laser device modes",
+                null));
+
+            flashlightPad.Key = _FlashlightKeybind.Value.MainKey;
+            otherPad.Key = _OtherKeybind.Value.MainKey;
+
+            // hot reload support
+            _FlashlightKeybind.SettingChanged += (_, __) =>
+            {
+                flashlightPad.Key = _FlashlightKeybind.Value.MainKey;
+            };
+
+            _FlashlightModifier.SettingChanged += (_, __) =>
+            { 
+                flashlightPad.Modifier = _FlashlightModifier.Value.MainKey;
+            };
+
+            _OtherKeybind.SettingChanged += (_, __) =>
+            {
+                otherPad.Key = _OtherKeybind.Value.MainKey;
+            };
+
+            _OtherModifier.SettingChanged += (_, __) => 
+            {
+                otherPad.Modifier = _OtherModifier.Value.MainKey;
+            };
+        }
+
+        private void _OtherModifier_SettingChanged(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private Player.FirearmController cont;
 
-        public KeyCode flashlightKey = KeyCode.Z;
-        public bool isHeld = false;
-        public bool isToggled = false;
-
-        private float lastClickTime = 0f;
-        private float doubleClickThreshold = 0.3f;
-
-        private readonly PressurePad flashlightPad = new PressurePad(KeyCode.Z, TacticalDeviceHelper.DeviceType.Flashlight);
-        private readonly PressurePad otherPad = new PressurePad(KeyCode.V, TacticalDeviceHelper.DeviceType.Other);
+        private readonly PressurePad flashlightPad = new PressurePad(KeyCode.Z, KeyCode.LeftControl, TacticalDeviceHelper.DeviceType.Flashlight);
+        private readonly PressurePad otherPad = new PressurePad(KeyCode.V, KeyCode.LeftControl, TacticalDeviceHelper.DeviceType.Other);
 
         public List<TacticalComboVisualController> TacticalDevices;
 
         private void Update()
         {
-            if (!Input.GetKeyDown(flashlightKey) && !Input.GetKeyUp(flashlightKey))
+            //I kinda hate this but I didnt see into the future earlier today so this is the optimization for now
+            bool padPressed = Input.GetKeyDown(flashlightPad.Key) || Input.GetKeyDown(otherPad.Key)
+                           || Input.GetKeyUp(flashlightPad.Key) || Input.GetKeyUp(otherPad.Key);
+
+            if (!padPressed)
                 return;
+
+            //try to init controller if it doesnt exist right now
+            if (cont == null && !TryInitController())
+                return;
+
+            // update pad states
+            flashlightPad.Update();
+            otherPad.Update();
+        }
+
+        private void handlePadStateChange(PressurePad pad, bool isActive, PressurePadInput direction)
+        {
+            LogSource.LogWarning($"{pad.DeviceType} pad changed: {isActive}");
 
             if (cont == null && !TryInitController())
                 return;
 
-            //manage pressure pad state
-            if (Input.GetKeyDown(flashlightKey))
-            {
-                if (isToggled)
-                {
-                    isToggled = false;
-                    LogSource.LogWarning("Toggle OFF");
-                }
+            var tacticals = TacticalDeviceHelper.GetTacticalDevicesOfType(cont, pad.DeviceType);
+            List<FirearmLightStateStruct> states = [];
 
-                float clickTime = Time.time;
-                LogSource.LogWarning($"Gap: {clickTime - lastClickTime}");
-                if (clickTime - lastClickTime < doubleClickThreshold)
-                {
-                    LogSource.LogWarning("Toggle ON");
-                    isToggled = true;
-                }
-
-                isHeld = true;
-                lastClickTime = clickTime;
-            }
-
-            if (Input.GetKeyUp(flashlightKey))
-            {
-                isHeld = false;
-            }
-
-            //apply pressure pad state
-            LogSource.LogWarning($"Pad is pressed: {computeLightState()}");
-
-            //get all flashlights
-            //var tacticals = TacticalDeviceHelper.GetTacticalDevices(cont);
-            var tacticals = TacticalDeviceHelper.GetTacticalDevicesOfType(cont, TacticalDeviceHelper.DeviceType.Flashlight);
-            List<FirearmLightStateStruct> tacStates = [];
-            LogSource.LogInfo($"{tacticals.Count} devices found");
             foreach (var item in tacticals)
             {
-                var light = item.LightMod;
-                LogSource.LogInfo(
-                    $"IsActive={light.IsActive}, \n" +
-                    $"Mode={light.SelectedMode}, \n" +
-                    $"ModesCount={light.Ginterface396_0.ModesCount}, \n" +
-                    $"ID={light.Item.Id}, \n" +
-                    $"ShortName={light.Item.ShortName.Localized()}, \n" +
-                    $"Name={light.Item.Name.Localized()}, \n" +
-                    $"Type={TacticalDeviceHelper.DetectType(item)} \n"
-
-                );
                 var state = TacticalDeviceHelper.getTacticalDeviceState(item);
-                state.IsActive = computeLightState();
-                tacStates.Add(state);
+                state.IsActive = pad.IsActive;
+                states.Add(state);
             }
 
-            if (cont.SetLightsState(tacStates.ToArray(), true))
+            bool animate = false;
+            if (direction == PressurePadInput.Pressed)
+                animate = true;
+
+            if (cont.SetLightsState(states.ToArray(), true, animate))
                 Logger.LogInfo("Set light state");
             else
                 Logger.LogInfo("Failed to set light state");
         }
 
-        private bool computeLightState()
+        private void handlePadModeChange(PressurePad pad)
         {
-            if (isHeld) return true;
-            if (isToggled) return true;
-            return false;
+            var tacticals = TacticalDeviceHelper.GetTacticalDevicesOfType(cont, pad.DeviceType);
+            List<FirearmLightStateStruct> states = [];
+
+            foreach (var item in tacticals)
+            {
+                var state = TacticalDeviceHelper.getTacticalDeviceState(item);
+                var nextLightMode = item.LightMod.method_0(state.LightMode + 1);
+                state.LightMode = nextLightMode;
+                states.Add(state);
+            }
+
+            if (cont.SetLightsState(states.ToArray(), true))
+                Logger.LogInfo("Set light state");
+            else
+                Logger.LogInfo("Failed to set light state");
         }
 
         private bool TryInitController()
         {
-            LogSource.LogInfo("[PressurePads] Init step 1: Entered TryInitController");
-
             AbstractGame game = Singleton<AbstractGame>.Instance;
             if (game == null)
             {
-                LogSource.LogInfo("[PressurePads] Init step 2 FAILED: LocalGame.Instance is null");
                 return false;
             }
-            LogSource.LogInfo("[PressurePads] Init step 2 OK: AbstractGame.Instance exists");
 
             Player player = null;
 
@@ -154,28 +199,22 @@ namespace PressurePads
 
             if (player == null)
             {
-                LogSource.LogInfo("[PressurePads] Init step 4 FAILED: Player is null");
                 return false;
             }
-            LogSource.LogInfo("[PressurePads] Init step 4 OK: Player exists");
 
             var hands = player.HandsController;
 
             if (hands == null)
             {
-                LogSource.LogInfo("[PressurePads] Init step 5 FAILED: HandsController is null");
                 return false;
             }
-            LogSource.LogInfo($"[PressurePads] Init step 5 OK: HandsController type = {hands.GetType().Name}");
 
             cont = hands as Player.FirearmController;
             if (cont == null)
             {
-                LogSource.LogInfo("[PressurePads] Init step 6 FAILED: HandsController is not FirearmController");
                 return false;
             }
 
-            LogSource.LogInfo("[PressurePads] Init step 6 OK: FirearmController acquired");
             return true;
         }
 
