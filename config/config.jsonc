@@ -1,0 +1,11 @@
+﻿{
+    "deviceTypeOverride": {
+        // None = 0
+        // Flashlight = 1 (white light devices)
+        // Other = 2 (non white light devices)
+        "57fd23e32459772d0805bcf1": 2, //Holosun LS321
+        "1de63dfb52c91ccb9dd2c83a": 2, // NGAL (Epic's AIO)
+        "253279f21f3222961c5dfa8d": 2, // OGL (Epic's AIO)
+        "c569fa63e462980552ecdc77": 2 // OGL FDE (Epic's AIO)
+    }
+}

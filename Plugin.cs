@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -27,6 +28,7 @@ namespace PressurePads
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
+        public static ClientConfig ClientConfig;
 
         public static ConfigEntry<KeyboardShortcut> _FlashlightKeybind;
         public static ConfigEntry<KeyboardShortcut> _FlashlightModifier;
@@ -41,11 +43,8 @@ namespace PressurePads
             LogSource = Logger;
             LogSource.LogInfo("plugin loaded!");
 
-            // uncomment line(s) below to enable desired example patch, then press F6 to build the project
-            // if this solution is properly placed in a YourSPTInstall/Development folder, the compiled plugin will automatically be copied into YourSPTInstall/BepInEx/plugins
-            //new SimplePatch().Enable();
-
-            //new OnTogglePatch().Enable();
+            var pluginPath = Path.GetDirectoryName(Info.Location);
+            ClientConfig = ConfigLoader.Load(pluginPath);
 
             flashlightPad.OnActiveStateChanged += handlePadStateChange;
             flashlightPad.OnModeChanged += handlePadModeChange;
@@ -61,7 +60,7 @@ namespace PressurePads
             _FlashlightModifier = Config.Bind(
                 "Flashlight",
                 "Flashlight Modifier",
-                new KeyboardShortcut(KeyCode.Z),
+                new KeyboardShortcut(KeyCode.LeftControl),
                 new ConfigDescription("Modifier key for switching flashlight modes",
                 null));
             _OtherKeybind = Config.Bind(
@@ -73,7 +72,7 @@ namespace PressurePads
             _OtherModifier = Config.Bind(
                 "Other",
                 "Other Modifier",
-                new KeyboardShortcut(KeyCode.V),
+                new KeyboardShortcut(KeyCode.LeftControl),
                 new ConfigDescription("Modifier key for switching IR and laser device modes",
                 null));
 
