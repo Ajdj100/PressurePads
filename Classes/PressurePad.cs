@@ -109,7 +109,7 @@ namespace PressurePads.Classes
                     IsToggled = true;
                     skipClick = true;
                 }
-
+ 
                 IsHeld = true;
                 EmitIfActiveChanged(PressurePadInput.Pressed, skipClick);
                 lastClickTime = clickTime;

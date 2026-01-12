@@ -23,7 +23,7 @@ using static HairRenderer;
 namespace PressurePads
 {
     // first string below is your plugin's GUID, it MUST be unique to any other mod. Read more about it in BepInEx docs. Be sure to update it if you copy this project.
-    [BepInPlugin("ajdj100.pressurepads", "PressurePads", "1.0.0")]
+    [BepInPlugin("ajdj100.pressurepads", "PressurePads", "1.1.1")]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
@@ -35,6 +35,8 @@ namespace PressurePads
         public static ConfigEntry<KeyboardShortcut> _OtherModifier;
         public static ConfigEntry<bool> _advancedMode;
         public static ConfigEntry<bool> _dontClick;
+
+        public static ConfigEntry<bool> _enableLogging;
 
 
         // BaseUnityPlugin inherits MonoBehaviour, so you can use base unity functions like Awake() and Update()
@@ -56,8 +58,7 @@ namespace PressurePads
                 "Advanced Mode",
                 false,
                 new ConfigDescription(
-                    "Toggle-only controls. Pressing the hotkey always toggles the light on or off; holding the key has no effect."
-                )
+                    "Hold the hotkey to activate the light temporarily, or double-tap it to toggle the light on or off.")
             );
             _dontClick = Config.Bind(
                 "General",
@@ -91,9 +92,19 @@ namespace PressurePads
                 new KeyboardShortcut(KeyCode.LeftControl),
                 new ConfigDescription("Modifier key for switching IR and laser device modes",
                 null));
+            _enableLogging = Config.Bind(
+                "Development",
+                "Enable Logging",
+                false,
+                new ConfigDescription("Enables extra logging, doesnt do anything for gameplay.",
+                null));
 
+            // load values
             flashlightPad.Key = _FlashlightKeybind.Value.MainKey;
+            flashlightPad.Modifier = _FlashlightModifier.Value.MainKey;
             otherPad.Key = _OtherKeybind.Value.MainKey;
+            otherPad.Modifier = _OtherModifier.Value.MainKey;
+            _enableLogging.Value = _enableLogging.Value;
 
             // hot reload support
             _advancedMode.SettingChanged += (_, __) =>
@@ -120,6 +131,8 @@ namespace PressurePads
             {
                 otherPad.Modifier = _OtherModifier.Value.MainKey;
             };
+
+            LogSource.LogInfo("PressurePads initialized");
         }
 
         private void _OtherModifier_SettingChanged(object sender, EventArgs e)
@@ -145,7 +158,10 @@ namespace PressurePads
 
             //try to init controller if it doesnt exist right now
             if (cont == null && !TryInitController())
+            {
+                LogSource.LogError("Failed to initialize controller. Does player have a weapon in their hands?");
                 return;
+            }
 
             // update pad states
             flashlightPad.Update();
@@ -154,6 +170,9 @@ namespace PressurePads
 
         private void handlePadStateChange(PressurePad pad, bool isActive, PressurePadInput direction, bool skipAnimation)
         {
+            if (_enableLogging.Value)
+                LogSource.LogInfo("Pressurepad state change event");
+
             if (cont == null && !TryInitController())
                 return;
 
@@ -180,6 +199,8 @@ namespace PressurePads
 
         private void handlePadModeChange(PressurePad pad)
         {
+            if (_enableLogging.Value)
+                LogSource.LogInfo("Pressurepad mode change event");
             var tacticals = TacticalDeviceHelper.GetTacticalDevicesOfType(cont, pad.DeviceType);
             List<FirearmLightStateStruct> states = [];
 
@@ -201,6 +222,7 @@ namespace PressurePads
         private bool TryInitController()
         {
             AbstractGame game = Singleton<AbstractGame>.Instance;
+            
             if (game == null)
             {
                 return false;
@@ -208,14 +230,7 @@ namespace PressurePads
 
             Player player = null;
 
-            if (game is LocalGame lg)
-            {
-                player = lg.PlayerOwner.Player;
-            }
-            else if (game is HideoutGame hg)
-            {
-                player = hg.PlayerOwner.Player;
-            }
+            player = GamePlayerOwner.MyPlayer;
 
             if (player == null)
             {
@@ -234,7 +249,8 @@ namespace PressurePads
             {
                 return false;
             }
-
+            if(_enableLogging.Value)
+                LogSource.LogInfo("Initialized firearm controller");
             return true;
         }
 

@@ -107,7 +107,7 @@
   </ItemGroup>
 
 	<PropertyGroup>
-		<BepInExPluginDir>E:\SPT_Dev\BepInEx\plugins\PressurePads</BepInExPluginDir>
+		<BepInExPluginDir>$(ProjectDir)..\..\BepInEx\plugins\PressurePads</BepInExPluginDir>
 	</PropertyGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
