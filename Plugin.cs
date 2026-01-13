@@ -105,6 +105,7 @@ namespace PressurePads
             otherPad.Key = _OtherKeybind.Value.MainKey;
             otherPad.Modifier = _OtherModifier.Value.MainKey;
             _enableLogging.Value = _enableLogging.Value;
+            _advancedMode.Value = _advancedMode.Value;
 
             // hot reload support
             _advancedMode.SettingChanged += (_, __) =>
@@ -171,7 +172,7 @@ namespace PressurePads
         private void handlePadStateChange(PressurePad pad, bool isActive, PressurePadInput direction, bool skipAnimation)
         {
             if (_enableLogging.Value)
-                LogSource.LogInfo("Pressurepad state change event");
+                LogSource.LogInfo($"Pressurepad active change event\nPad: {pad}\nState: {isActive}\nDirection: {direction}\nSkipAnimation: {skipAnimation}");
 
             if (cont == null && !TryInitController())
                 return;
@@ -190,11 +191,17 @@ namespace PressurePads
                 states.Add(state);
             }
 
-            bool animate = false;
-            if (!_dontClick.Value && !skipAnimation && direction == PressurePadInput.Pressed)
-                animate = true;
+            bool animated = true;
+            //if dontclick is true (config setting)
+            //if skipAnimation is true
+            //if direction is released
+            if (_dontClick.Value || skipAnimation || direction == PressurePadInput.Released)
+                animated = false;   //disable animation
 
-            cont.SetLightsState(states.ToArray(), true, animate);
+            if (_enableLogging.Value)
+                LogSource.LogInfo($"Setting {states.Count} device states, skip animation: {animated}");
+
+            cont.SetLightsState(states.ToArray(), true, animated);
         }
 
         private void handlePadModeChange(PressurePad pad)
@@ -215,6 +222,9 @@ namespace PressurePads
                 state.LightMode = nextLightMode;
                 states.Add(state);
             }
+
+            if (_enableLogging.Value)
+                LogSource.LogInfo($"Setting {states.Count} device states, skip animation: {_dontClick.Value}");
 
             cont.SetLightsState(states.ToArray(), true, !_dontClick.Value);
         }
