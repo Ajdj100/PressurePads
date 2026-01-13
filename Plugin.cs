@@ -136,11 +136,6 @@ namespace PressurePads
         LogSource.LogInfo("PressurePads initialized");
         }
 
-        private void _OtherModifier_SettingChanged(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
         private Player.FirearmController cont;
 
         private readonly PressurePad flashlightPad = new PressurePad(KeyCode.Z, KeyCode.LeftControl, TacticalDeviceHelper.DeviceType.Flashlight);
@@ -231,13 +226,6 @@ namespace PressurePads
 
         private bool TryInitController()
         {
-            AbstractGame game = Singleton<AbstractGame>.Instance;
-
-            if (game == null)
-            {
-                return false;
-            }
-
             Player player = null;
 
             player = GamePlayerOwner.MyPlayer;
