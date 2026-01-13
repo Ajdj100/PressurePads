@@ -104,8 +104,8 @@ namespace PressurePads
             flashlightPad.Modifier = _FlashlightModifier.Value.MainKey;
             otherPad.Key = _OtherKeybind.Value.MainKey;
             otherPad.Modifier = _OtherModifier.Value.MainKey;
-            _enableLogging.Value = _enableLogging.Value;
-            _advancedMode.Value = _advancedMode.Value;
+            flashlightPad.AdvancedMode = _advancedMode.Value;
+            otherPad.AdvancedMode = _advancedMode.Value;
 
             // hot reload support
             _advancedMode.SettingChanged += (_, __) =>
@@ -119,7 +119,7 @@ namespace PressurePads
             };
 
             _FlashlightModifier.SettingChanged += (_, __) =>
-            { 
+            {
                 flashlightPad.Modifier = _FlashlightModifier.Value.MainKey;
             };
 
@@ -128,12 +128,12 @@ namespace PressurePads
                 otherPad.Key = _OtherKeybind.Value.MainKey;
             };
 
-            _OtherModifier.SettingChanged += (_, __) => 
+            _OtherModifier.SettingChanged += (_, __) =>
             {
                 otherPad.Modifier = _OtherModifier.Value.MainKey;
             };
 
-            LogSource.LogInfo("PressurePads initialized");
+        LogSource.LogInfo("PressurePads initialized");
         }
 
         private void _OtherModifier_SettingChanged(object sender, EventArgs e)
@@ -232,7 +232,7 @@ namespace PressurePads
         private bool TryInitController()
         {
             AbstractGame game = Singleton<AbstractGame>.Instance;
-            
+
             if (game == null)
             {
                 return false;
@@ -259,7 +259,7 @@ namespace PressurePads
             {
                 return false;
             }
-            if(_enableLogging.Value)
+            if (_enableLogging.Value)
                 LogSource.LogInfo("Initialized firearm controller");
             return true;
         }
