@@ -101,11 +101,11 @@ namespace PressurePads.Helpers
             return outDevices;
         }
 
-        public static FirearmLightStateStruct getTacticalDeviceState(TacticalComboVisualController device)
+        public static LightsState getTacticalDeviceState(TacticalComboVisualController device)
         {
-            return device.LightMod.GetLightState();
+            return device.LightMod.GetLightState(false, false);
         }
 
-        private static readonly FieldInfo _tacticalModesField = AccessTools.Field(typeof(TacticalComboVisualController), "list_0");
+        private static readonly FieldInfo _tacticalModesField = AccessTools.Field(typeof(TacticalComboVisualController), "_ligthbeamsTransforms");
     }
 }
