@@ -6,7 +6,6 @@ using System.Text;
 using EFT;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Utilities;
-using static GClass2175;
 
 namespace PressurePads.Helpers
 {

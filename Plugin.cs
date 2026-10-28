@@ -173,7 +173,7 @@ namespace PressurePads
                 return;
 
             var tacticals = TacticalDeviceHelper.GetTacticalDevicesOfType(cont, pad.DeviceType);
-            List<FirearmLightStateStruct> states = [];
+            List<LightsState> states = [];
 
             //cancel if nothing to toggle
             if (tacticals.Count <= 0)
@@ -204,7 +204,7 @@ namespace PressurePads
             if (_enableLogging.Value)
                 LogSource.LogInfo("Pressurepad mode change event");
             var tacticals = TacticalDeviceHelper.GetTacticalDevicesOfType(cont, pad.DeviceType);
-            List<FirearmLightStateStruct> states = [];
+            List<LightsState> states = [];
 
             //cancel if nothing to toggle
             if (tacticals.Count <= 0)
@@ -213,7 +213,7 @@ namespace PressurePads
             foreach (var item in tacticals)
             {
                 var state = TacticalDeviceHelper.getTacticalDeviceState(item);
-                var nextLightMode = item.LightMod.method_0(state.LightMode + 1);
+                var nextLightMode = item.LightMod.ClampSelectedMode(state.LightMode + 1);
                 state.LightMode = nextLightMode;
                 states.Add(state);
             }
