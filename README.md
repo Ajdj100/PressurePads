@@ -19,3 +19,21 @@ Enables independently managing tactical devices. Toggle and switch modes on your
 
 ## Installation (thanks DrakiaXYZ for the gif)
 ![](https://i.imgur.com/afNPjAw.gif)
+
+## Building
+
+Build the solution normally, or run `dotnet build -c Release`.
+Each successful build puts the complete distribution in `dist`:
+
+```text
+dist/
+  BepInEx/
+    plugins/
+      pressurepads/
+        PressurePads.dll
+        config/config.jsonc
+```
+
+Copy the contents of `dist` into your SPT installation's root directory.
+Builds also install there automatically by default; use `-p:DeployToSpt=false`
+to produce the distribution without installing it.
